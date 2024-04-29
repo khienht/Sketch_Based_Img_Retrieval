@@ -158,10 +158,13 @@ class TripletNet(object):
                         # 'Loss  ({losss:.4f})\t'
                         # 'Sketch Loss ({acc:.4f})\t'
                         .format(epoch + 1, ii + 1, len(dataset), triplet_loss_meterr=loss.item()))
+                if ii==3:
+                    break
             if self.save_model:
-                t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
-                t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
-
+                # t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
+                # t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
+                t.save(photo_net, self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
+                t.save(sketch_net, self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
 
 
 

@@ -92,6 +92,7 @@ class Extractor(object):
     # the input is loaded by dataloader
     @t.no_grad()
     def _extract_with_dataloader(self, data_root, out_root):
+        feature=[]
         names = []
 
         self.model.eval()
@@ -107,21 +108,28 @@ class Extractor(object):
             image = data['I']
             image = image.unsqueeze(0)
             name = data['N']
+            print('name:', name)
 
             out = self.model(image)
             # if cat_info:
             #     i_feature = out[1]
             # else:
             i_feature = out
-            if i == 0:
-                feature = i_feature.squeeze().numpy()
+            # if i == 0:
+            #     feature = i_feature.squeeze().numpy()
 
-            else:
-                feature = np.append(feature, i_feature.squeeze().numpy(), axis=0)
+            # else:
+            #     feature = np.append(feature, i_feature.squeeze().numpy(), axis=0)
+            
 
-            names += name
+            names.append(name)
+            feature.append(i_feature.squeeze().numpy())
+
+            if i == 3:
+                break
 
         data = {'name': names, 'feature': feature}
+        print('extract', names)
         if out_root:
             out = open(out_root, 'wb')
             pickle.dump(data, out)

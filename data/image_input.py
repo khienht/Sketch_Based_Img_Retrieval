@@ -36,16 +36,14 @@ class ImageDataset(data.Dataset):
     def __getitem__(self, index):
 
         image_path = self.image_paths[index]
-
         image = Image.open(image_path).convert('RGB')
         image = self.tranform(image)
 
-        image_path = image_path.split('/')
+        image_path = image_path.split('\\')
         cname = image_path[-2]
         fname = image_path[-1]
 
         name = cname + '/' + fname
-
         return {'I': image, 'N': name}
 
     def __len__(self):

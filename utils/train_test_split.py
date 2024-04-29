@@ -3,7 +3,7 @@ import shutil
 import random
 
 # Đường dẫn tới thư mục chứa dữ liệu
-data_dir = '256x256'
+data_dir = 'Sketchy_Dataset_small'
 photo_dir = os.path.join(data_dir, 'photo/tx_000000000000')
 sketch_dir = os.path.join(data_dir, 'sketch/tx_000000000000')
 

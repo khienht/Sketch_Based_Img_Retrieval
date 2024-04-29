@@ -20,7 +20,7 @@ class MyVGG16(nn.Module):
         # Tạo lại classifier với các lớp đã chỉnh sửa
         self.classifier = nn.Sequential(
             *classifier_children[:-1],
-            nn.Linear(4096, 1000)
+            nn.Linear(4096, 125)
         )
     
     def forward(self, x):

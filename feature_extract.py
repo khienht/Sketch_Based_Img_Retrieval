@@ -31,6 +31,10 @@ device = 'cuda:1'
 
 '''vgg'''
 vgg = t.load(PHOTO_VGG)
+if isinstance(vgg, nn.Module):
+    print("vgg là một đối tượng thuộc lớp torch.nn.Module.")
+else:
+    print(type(vgg))
 # vgg.classifier[0] = nn.Linear(in_features=512*7*7, out_features=4096, bias=True)
 # vgg.classifier[6] = nn.Linear(in_features=4096, out_features=125, bias=True)
 # vgg.load_state_dict(t.load(PHOTO_VGG, map_location=t.device('cpu')))
@@ -42,7 +46,7 @@ vgg.eval()
 
 photo_feature = ext._extract_with_dataloader(test_photo_root, 'photo-vgg-0epoch.pkl')
 
-vgg.load_state_dict(t.load(SKETCH_VGG, map_location=t.device('cpu')))
+vgg=t.load(SKETCH_VGG)
 ext.reload_model(vgg)
 
 sketch_feature = ext._extract_with_dataloader(test_set_root, 'sketch-vgg-0epoch.pkl')
