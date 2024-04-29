@@ -56,6 +56,8 @@ def check_args(args):
     if args.save_model:
         save_photo_dir = os.path.join(args.save_dir, 'photo')
         save_sketch_dir = os.path.join(args.save_dir, 'sketch')
+        if not os.path.exists('model'):
+            os.mkdir('model')
         if not os.path.exists(args.save_dir):
             os.mkdir(args.save_dir)
             os.mkdir(save_photo_dir)
