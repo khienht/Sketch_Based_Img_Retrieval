@@ -28,6 +28,7 @@ class TripletLoss(nn.Module):
         triplet_loss = pos_distance - negative_distance   # bs x bs x num_vec
         # print('TripletLoss.forward.triplet_loss', triplet_loss)
         triplet_loss = triplet_loss + self.m
+        print(triplet_loss)
         eye = torch.eye(bs)
         triplet_loss = triplet_loss * (1 - eye)
         triplet_loss = F.relu(triplet_loss)

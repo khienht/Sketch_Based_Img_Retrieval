@@ -13,11 +13,6 @@ from .TripletLoss import TripletLoss
 from utils.test import Tester
 import os
 import numpy as np
-import gc
-import torchvision.models as models
-import torchvision.transforms as transforms
-
-
 
 class Config(object):
     def __init__(self):
@@ -33,6 +28,7 @@ class TripletNet(object):
         # self.device = opt.device
         self.epochs = opt.epochs
         self.lr = opt.lr
+        self.log_interval = opt.log_interval
 
         # testing config
         self.photo_test = opt.photo_test
@@ -70,15 +66,6 @@ class TripletNet(object):
 
     def _get_vgg16(self, pretrained=True):
         model = MyVGG16(pretrained=pretrained)
-        # model.classifier[0] = nn.Linear(in_features=512*7*7, out_features=4096, bias=True)
-        # model.classifier[2] = nn.Dropout()
-        # model.classifier[5] = nn.Dropout()
-        # model.classifier[6] = nn.Linear(in_features=4096, out_features=125, bias=True)
-        # for name, module in model.named_modules():
-        #     module_type = type(module)
-        #     if module_type == t.nn.functional:
-        #         print(f"{name} is a Functional layer")
-
         return model
 
     def _get_resnet50(self, pretrained=True):
@@ -89,11 +76,11 @@ class TripletNet(object):
 
     def train(self):
         if self.net == 'vgg16':
-            photo_net = DataParallel(self._get_vgg16())
-            sketch_net = DataParallel(self._get_vgg16())
+            photo_net = self._get_vgg16()
+            sketch_net = self._get_vgg16()
         elif self.net == 'resnet50':
-            photo_net = DataParallel(self._get_resnet50())
-            sketch_net = DataParallel(self._get_resnet50())
+            photo_net = self._get_resnet50()
+            sketch_net = self._get_resnet50()
         # photo_net.to(device)
         # sketch_net.to(device)
 
@@ -107,22 +94,24 @@ class TripletNet(object):
         print('net')
         print(photo_net)
 
-        # triplet_loss = nn.TripletMarginLoss(margin=self.margin, p=self.p)
-        photo_cat_loss = nn.CrossEntropyLoss()
-        sketch_cat_loss = nn.CrossEntropyLoss()
-
-        my_triplet_loss = TripletLoss()
+        triplet_loss = nn.TripletMarginLoss(margin=self.margin, p=self.p)
 
         # optimizer
         photo_optimizer = t.optim.Adam(photo_net.parameters(), lr=self.lr)
         sketch_optimizer = t.optim.Adam(sketch_net.parameters(), lr=self.lr)
 
+        # # a learning rate scheduler which decreases the learning rate by
+        # # 0.5 every 2 epochs
+        # lr_scheduler = t.optim.lr_scheduler.StepLR(photo_optimizer,
+        #                                             step_size=2,
+        #                                             gamma=0.5)
+
         # if self.vis:
         #     vis = Visualizer(self.env)
 
-        triplet_loss_meter = AverageValueMeter()
-        sketch_cat_loss_meter = AverageValueMeter()
-        photo_cat_loss_meter = AverageValueMeter()
+        # triplet_loss_meter = AverageValueMeter()
+        # sketch_cat_loss_meter = AverageValueMeter()
+        # photo_cat_loss_meter = AverageValueMeter()
 
         data_loader = TripleDataLoader(self.dataloader_opt)
         dataset = data_loader.load_data()
@@ -132,89 +121,31 @@ class TripletNet(object):
 
             print('---------------{0}---------------'.format(epoch))
 
-            if self.test and epoch % self.test_f == 0:
-
-                # tester_config = Config()
-                # tester_config.test_bs = 128
-                # tester_config.photo_net = photo_net
-                # tester_config.sketch_net = sketch_net
-
-                # tester_config.photo_test = self.photo_test
-                # tester_config.sketch_test = self.sketch_test
-
-                # tester = Tester(tester_config)
-                # test_result = tester.test_instance_recall()
-
-                # result_key = list(test_result.keys())
-                # vis.plot('recall', np.array([test_result[result_key[0]], test_result[result_key[1]]]),
-                #               legend=[result_key[0], result_key[1]])
-                if self.save_model:
-                    t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
-                    t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
-
             photo_net.train()
             sketch_net.train()
+            avg_loss = 0
 
-            for i in range(len(dataset)):
-                data = dataset[i]
+            for ii, data in enumerate(dataset):
                 photo_optimizer.zero_grad()
                 sketch_optimizer.zero_grad()
 
-                photo = data['P']
-                # print(photo.shape)
-
-                photo = photo.unsqueeze(0)
-                sketch = data['S']
-                sketch = sketch.unsqueeze(0)
+                anchor = data['A']
+                anchor = anchor.unsqueeze(0)
+                pos = data['P']
+                pos = pos.unsqueeze(0)
+                neg = data['N']
+                neg = neg.unsqueeze(0)
                 label = data['L']
-                label = t.unsqueeze(t.tensor(label), 0)
+                label1 = data['L1']
+
+                # label = t.unsqueeze(t.tensor(label), 0)
                 
-                p_cat, p_feature = photo_net(photo)
-                s_cat, s_feature = sketch_net(sketch)
+                a_feature = sketch_net(anchor)
+                p_feature= photo_net(pos)
+                n_feature= photo_net(neg)
 
-                # category loss
-                p_cat_loss = photo_cat_loss(p_cat, label)
-                s_cat_loss = sketch_cat_loss(s_cat, label)
-
-                photo_cat_loss_meter.add(p_cat_loss.item())
-                sketch_cat_loss_meter.add(s_cat_loss.item())
-
-                # triplet loss
-                loss = p_cat_loss + s_cat_loss
-
-                # tri_record = 0.
-                '''
-                for i in range(self.batch_size):
-                    # negative
-                    negative_feature = t.cat([p_feature[0:i, :], p_feature[i + 1:, :]], dim=0)
-                    # print('negative_feature.size :', negative_feature.size())
-                    # photo_feature
-                    anchor_feature = s_feature[i, :]
-                    anchor_feature = anchor_feature.expand_as(negative_feature)
-                    # print('anchor_feature.size :', anchor_feature.size())
-
-                    # positive
-                    positive_feature = p_feature[i, :]
-                    positive_feature = positive_feature.expand_as(negative_feature)
-                    # print('positive_feature.size :', positive_feature.size())
-
-                    tri_loss = triplet_loss(anchor_feature, positive_feature, negative_feature)
-
-                    tri_record = tri_record + tri_loss
-
-                    # print('tri_loss :', tri_loss)
-                    loss = loss + tri_loss
-                '''
-                # print('tri_record : ', tri_record)
-
-                my_tri_loss = my_triplet_loss(s_feature, p_feature) / (self.batch_size - 1)
-                triplet_loss_meter.add(my_tri_loss.item())
-                # print('my_tri_loss : ', my_tri_loss)
-
-                # print(tri_record - my_tri_loss)
-                loss = loss + my_tri_loss
-                # print('loss :', loss)
-                # loss = loss / opt.batch_size
+                loss = triplet_loss(a_feature, p_feature, n_feature)
+                # loss = loss / self.batch_size
 
                 loss.backward()
 
@@ -222,14 +153,15 @@ class TripletNet(object):
                 photo_optimizer.step()
                 sketch_optimizer.step()
 
-                # if self.vis:
-                #     vis.plot('triplet_loss', np.array([triplet_loss_meter.value()[0], photo_cat_loss_meter.value()[0],
-                #                                        sketch_cat_loss_meter.value()[0]]),
-                #              legend=['triplet_loss', 'photo_cat_loss', 'sketch_cat_loss'])
+                print('[Train] Epoch: [{0}][{1}/{2}]\t'
+                        'Triplet loss  ({triplet_loss_meterr:.3f})\t'
+                        # 'Loss  ({losss:.4f})\t'
+                        # 'Sketch Loss ({acc:.4f})\t'
+                        .format(epoch + 1, ii + 1, len(dataset), triplet_loss_meterr=loss.item()))
+            if self.save_model:
+                t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
+                t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
 
-                triplet_loss_meter.reset()
-                photo_cat_loss_meter.reset()
-                sketch_cat_loss_meter.reset()
 
 
 

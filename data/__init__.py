@@ -28,7 +28,7 @@ class TripleDataLoader(data.Dataset):
             yield data
 
 
-class ImageDataLoader(object):
+class ImageDataLoader(data.Dataset):
     def __init__(self, opt):
         self.dataset = ImageDataset(opt.image_root)
         # self.dataloader = torch.utils.data.DataLoader(
@@ -44,7 +44,10 @@ class ImageDataLoader(object):
 
     def __len__(self):
         return len(self.dataset)
-
-    # def __iter__(self):
-    #     for i, data in enumerate(self.dataloader):
-    #         yield data
+    
+    def __getitem__(self, index):
+        return self.dataset.__getitem__(index)
+    
+    def __iter__(self):
+        for i, data in enumerate(self.dataset):
+            yield data

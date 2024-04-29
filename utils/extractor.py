@@ -40,7 +40,7 @@ class Extractor(object):
     @t.no_grad()
     def extract(self, data_root, out_root=None):
         if self.dataloader:
-            return self._extract_with_dataloader(data_root=data_root, cat_info=self.cat_info, out_root=out_root)
+            return self._extract_with_dataloader(data_root=data_root, out_root=out_root)
         else:
             return self._extract_without_dataloader(data_root=data_root, cat_info=self.cat_info, out_root=out_root)
 
@@ -91,7 +91,7 @@ class Extractor(object):
     # the model's output contains both the inputs' feature and category info
     # the input is loaded by dataloader
     @t.no_grad()
-    def _extract_with_dataloader(self, data_root, cat_info, out_root):
+    def _extract_with_dataloader(self, data_root, out_root):
         names = []
 
         self.model.eval()
@@ -105,18 +105,19 @@ class Extractor(object):
 
         for i, data in enumerate(dataset):
             image = data['I']
+            image = image.unsqueeze(0)
             name = data['N']
 
             out = self.model(image)
-            if cat_info:
-                i_feature = out[1]
-            else:
-                i_feature = out
+            # if cat_info:
+            #     i_feature = out[1]
+            # else:
+            i_feature = out
             if i == 0:
-                feature = i_feature.cpu().squeeze().numpy()
+                feature = i_feature.squeeze().numpy()
 
             else:
-                feature = np.append(feature, i_feature.cpu().squeeze().numpy(), axis=0)
+                feature = np.append(feature, i_feature.squeeze().numpy(), axis=0)
 
             names += name
 
