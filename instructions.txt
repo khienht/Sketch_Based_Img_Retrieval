@@ -1,0 +1,4 @@
+1. pip install flask
+2. add folder dataset into folder static
+3. python demo.py
+4. open that link with "canvas" (ex: "https://121.0.0:5000/canvas)

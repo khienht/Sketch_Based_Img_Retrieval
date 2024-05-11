@@ -3,12 +3,13 @@ import shutil
 import random
 
 # Đường dẫn tới thư mục chứa dữ liệu
-data_dir = 'Sketchy_Dataset_small'
+data_dir = 'dataset1/photo_train'
 photo_dir = os.path.join(data_dir, 'photo/tx_000000000000')
 sketch_dir = os.path.join(data_dir, 'sketch/tx_000000000000')
 
 # # tạo thư mục dataset chứa train và test
-os.makedirs('dataset', exist_ok=True)
+os.makedirs('dataset1/photo_val', exist_ok=True)
+os.makedirs('dataset1/photo_val', exist_ok=True)
 dataset_dir = 'dataset'
 photo_train_dir = os.path.join(dataset_dir, 'photo_train')
 sketch_train_dir = os.path.join(dataset_dir, 'sketch_train')
@@ -81,4 +82,3 @@ for category_folder in os.listdir(photo_dir):
             sketch_name = path[-1].split("-")[0]
             if sketch_name == photo_name:
                 shutil.copy(os.path.join(category_sketch_path, sketch), test_sketch_path)
-

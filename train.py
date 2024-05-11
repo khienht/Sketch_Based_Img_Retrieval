@@ -18,9 +18,9 @@ def parase_args():
     parser.add_argument('--photo_root', type=str, default='dataset/photo_train', help='Training photo root')
     parser.add_argument('--sketch_root', type=str, default='dataset/sketch_train',
                         help='Training sketch root')
-    parser.add_argument('--batch_size', type=int, default=64, help='The size of batch (default :16')
+    parser.add_argument('--batch_size', type=int, default=16, help='The size of batch (default :128')
     parser.add_argument('--device', type=str, default='0', help='The cuda device to be used (default: 0)')
-    parser.add_argument('--epochs', type=int, default=2, help='The number of epochs to run (default: 5)')
+    parser.add_argument('--epochs', type=int, default=1, help='The number of epochs to run (default: 5)')
     parser.add_argument('--lr', type=float, default=0.0001, help='The learning rate of the model')
     
     parser.add_argument('--test', type=str2bool, nargs='?', default=True)

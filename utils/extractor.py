@@ -4,9 +4,8 @@ import torch as t
 import torchvision as tv
 from torch import nn
 import pickle
-from utils.visualize import Visualizer
-from data import ImageDataLoader
 import numpy as np
+from data.image_input import ImageDataset
 
 
 class Config(object):
@@ -29,11 +28,9 @@ class Extractor(object):
             self.transform = tv.transforms.Compose([
                 tv.transforms.Resize(224),
                 tv.transforms.ToTensor(),
-                tv.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                tv.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
             ])
-        self.vis = vis
-        if self.vis:
-            self.viser = Visualizer('caffe2torch_test')
 
     # extract the inputs' feature via self.model
     # the model's output only contains the inputs' feature
@@ -67,8 +64,6 @@ class Extractor(object):
                     image = image[None]
                     image = image
 
-                    if self.vis:
-                        self.viser.images(image.cpu().numpy() * 0.5 + 0.5, win='extractor')
                     out = self.model(image)
                     if cat_info:
                         i_feature = out[1]
@@ -92,8 +87,8 @@ class Extractor(object):
     # the input is loaded by dataloader
     @t.no_grad()
     def _extract_with_dataloader(self, data_root, out_root):
-        feature=[]
         names = []
+        feature = []
 
         self.model.eval()
 
@@ -101,14 +96,14 @@ class Extractor(object):
         opt.image_root = data_root
         opt.batch_size = 128
 
-        dataloader = ImageDataLoader(opt)
-        dataset = dataloader.load_data()
+        # dataloader = ImageDataLoader(opt)
+        dataloader = ImageDataset(data_root)
+        # dataset = dataloader.load_data()
 
-        for i, data in enumerate(dataset):
+        for i, data in enumerate(dataloader):
             image = data['I']
-            image = image.unsqueeze(0)
+            # image = image.unsqueeze(0)
             name = data['N']
-            print('name:', name)
 
             out = self.model(image)
             # if cat_info:
@@ -116,20 +111,20 @@ class Extractor(object):
             # else:
             i_feature = out
             # if i == 0:
-            #     feature = i_feature.squeeze().numpy()
+            # feature = i_feature.squeeze().numpy()
+            # else:
+            # feature.append(i_feature)
+            # if i == 0:
+                # feature = i_feature.squeeze().numpy()
 
             # else:
-            #     feature = np.append(feature, i_feature.squeeze().numpy(), axis=0)
-            
-
-            names.append(name)
             feature.append(i_feature.squeeze().numpy())
 
-            if i == 3:
-                break
+            names.append(name)
+            print('Extract img: ', name)
+            # if i==3: break
 
         data = {'name': names, 'feature': feature}
-        print('extract', names)
         if out_root:
             out = open(out_root, 'wb')
             pickle.dump(data, out)
@@ -137,28 +132,7 @@ class Extractor(object):
             out.close()
 
         return data
-
-    # reload model with model file
-    # the reloaded model contains fully connection layer
-    def reload_state_dict_with_fc(self, state_file):
-        temp_model = tv.models.resnet34(pretrained=False)
-        temp_model.fc = nn.Linear(512, 125)
-        temp_model.load_state_dict(t.load(state_file))
-
-        pretrained_dict = temp_model.state_dict()
-
-        model_dict = self.model.state_dict()
-
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-
-        model_dict.update(pretrained_dict)
-        self.model.load_state_dict(model_dict)
-
-    # reload model with model file
-    # the reloaded model doesn't contain fully connection layer
-    def reload_state_dic(self, state_file):
-        self.model.load_state_dict(t.load(state_file))
-
+    
     # reload model with model object directly
     def reload_model(self, model):
         self.model = model

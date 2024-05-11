@@ -69,7 +69,8 @@ class TripleDataset(data.Dataset):
         i = random.choice(r) #class
 
         neg_path, label1 = self._getneg_photo(i)
-        
+        # print(photo_path, sketch_path, neg_path, label, label1)
+
         photo = Image.open(photo_path).convert('RGB')
         sketch = Image.open(sketch_path).convert('RGB')
         neg = Image.open(neg_path).convert('RGB')
@@ -81,6 +82,7 @@ class TripleDataset(data.Dataset):
         L1 = label1
 
         return {'A': A, 'P': P, 'N': N, 'L': L, 'L1': L1}
+        # return A, P, N, L, L1
 
     def __len__(self):
         return self.len
@@ -114,9 +116,9 @@ class TripleDataset(data.Dataset):
         neg_path = os.path.join(self.photo_root, cname)
         paths = make_dataset1(self.photo_root, cname)
 
-        ran = random.randint(0, 79)
+        ran = random.randint(0, 7)
 
         neg_img = paths[ran]
         label = self.class_to_idx[cname]
 
-        return neg_img, cname
+        return neg_img, label

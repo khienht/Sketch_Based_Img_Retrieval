@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SBIR</title>
+    <link rel="stylesheet" href="//at.alicdn.com/t/font_584725_0nyjbeaxjw2ep14i.css">
+    <link rel="stylesheet" href="/static/css/page_style.css">
+    <link rel="stylesheet" href="/static/css/canvas_style.css">
+    <!-- Boxicons CSS -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+<canvas id="drawing-board" style="border:3px solid rgb(0, 0, 0); display:block; margin:0 auto;"></canvas>
+<div class="header">
+    <h1 style="text-align:center;margin:0 auto"> Sketch-Based Image Retrieval</h1>
+</div>
+<div id="range-wrap"><input type="range" id="range" min="1" max="30" value="5" title="wrap"></div>
+<div class="tools">
+    <button id="brush" class="active" title="brush"><i class="iconfont icon-qianbi"></i></button>
+    <!-- <button id="eraser" title="eraser" ><i class="iconfont icon-xiangpi"></i></button> -->
+    <button id="clear" title="clear"><i class="iconfont icon-qingchu"></i></button>
+    <button id="undo" title="undo"><i class="iconfont icon-chexiao"></i></button>
+
+    <form action="" enctype='multipart/form-data' method='POST'>
+        <button id="save" title="save"><i class="iconfont icon-fuzhi"></i></button>
+        <input type="text" name="sketchUpload" id="sketchUpload" 
+        value="" style="display:none"/>
+    </form>
+
+    <button id="upload" title="upload">
+        <div style="margin:5px 0px 0px 3px">
+            <i class='bx bx-upload'></i>
+        </div>
+    </button>
+
+    <form action="" enctype='multipart/form-data' method='POST' id="upload_form">
+        <input type="file" name="uploadSketch" id="uploadSketch" 
+        style="display:none" accept="image/png, image/jpg" aria-hidden="true">
+        <input type="text" name="uploadFlag" id="uploadFlag" 
+        value="0" style="display:none" aria-hidden="true"/>
+    </form>
+</div>
+</body>
+<script src="/static/js/main.js"></script>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SBIR DEMO</title>
+    <link rel="stylesheet" href="/static/css/page_style.css">
+    <link rel="stylesheet" href="/static/css/canvas_style.css">
+    <link rel="stylesheet" href="/static/css/button.css">
+</head>
+<body>
+<div class="header">
+    <h1 style="text-align:center;margin:0 auto"> Retrieval</h1>
+</div>
+<div style="height:44px"></div>
+<div class="row">
+    <div class="side">
+        <h2 style="margin-left: 28px">Query sketch</h2>
+        <div style="height:200px;">
+            <img src="{{ url_for('static', filename= './sketch_tmp/upload.png',_t=val1) }}"
+                 width="200" height="200"
+                 style="border:3px solid black;margin:5px 0px 10px 0px"
+                 alt="error: load image"/>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- <h2>Results</h2> -->
+        <div class="pic_list_con">
+            <ul class="clearfix" id="show_img_pannel">
+            </ul>
+        </div>
+        <!-- <div>
+            <table style="text-align:center; margin:0 auto" cellspacing="30">
+                <tr>
+                    <th>
+                        <a class="button back" id="prev" onclick="getProImg()">Back
+                        </a>
+                    </th>
+                    <th>
+                        <h5 id="info"> 1/5 </h5></th>
+                    <th>
+                        <a class="button next" id="nextv" onclick="getNextImg()">Next
+                        </a>
+                    </th>
+                    <th>
+                        <a style="text-align:center; margin:0 auto" class="button" href="{{url_for('upload')}}">Upload</a>
+                    </th>
+                </tr>
+            </table>
+        </div> -->
+    </div>
+</div>
+
+<input type="text" name="json_info" id="json_info" value="{{json_info}}" style="display:none" aria-label="JSON Information"/>
+
+</body>
+<script src="/static/js/gallery.js"></script>
+<script src="/static/js/jquery-3.4.0.min.js"></script>
+</html>

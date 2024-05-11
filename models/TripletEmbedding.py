@@ -1,7 +1,10 @@
 import torch as t
 from torch import nn
+from data.triplet_input import TripleDataset
 from data import TripleDataLoader
-from models.vgg import MyVGG16
+# import torch.utils.data as dataloader
+from torch.utils.data import DataLoader 
+from models.vgg import vgg16
 from models.sketch_resnet import resnet50
 # from utils.visualize import Visualizer
 from torchnet.meter import AverageValueMeter
@@ -65,7 +68,8 @@ class TripletNet(object):
         self.cat = opt.cat
 
     def _get_vgg16(self, pretrained=True):
-        model = MyVGG16(pretrained=pretrained)
+        model = vgg16(pretrained=True)
+        model.classifier[6] = nn.Linear(in_features=4096, out_features=125, bias=True)
         return model
 
     def _get_resnet50(self, pretrained=True):
@@ -81,16 +85,8 @@ class TripletNet(object):
         elif self.net == 'resnet50':
             photo_net = self._get_resnet50()
             sketch_net = self._get_resnet50()
-        # photo_net.to(device)
-        # sketch_net.to(device)
 
-        # if self.fine_tune:
-        #     photo_net_root = self.model_root
-        #     sketch_net_root = self.model_root.replace('photo', 'sketch')
-
-        #     photo_net.load_state_dict(t.load(photo_net_root, map_location=t.device('cpu')))
-        #     sketch_net.load_state_dict(t.load(sketch_net_root, map_location=t.device('cpu')))
-
+        
         print('net')
         print(photo_net)
 
@@ -100,22 +96,12 @@ class TripletNet(object):
         photo_optimizer = t.optim.Adam(photo_net.parameters(), lr=self.lr)
         sketch_optimizer = t.optim.Adam(sketch_net.parameters(), lr=self.lr)
 
-        # # a learning rate scheduler which decreases the learning rate by
-        # # 0.5 every 2 epochs
-        # lr_scheduler = t.optim.lr_scheduler.StepLR(photo_optimizer,
-        #                                             step_size=2,
-        #                                             gamma=0.5)
-
-        # if self.vis:
-        #     vis = Visualizer(self.env)
-
-        # triplet_loss_meter = AverageValueMeter()
-        # sketch_cat_loss_meter = AverageValueMeter()
-        # photo_cat_loss_meter = AverageValueMeter()
-
         data_loader = TripleDataLoader(self.dataloader_opt)
         dataset = data_loader.load_data()
-        print(dataset.__len__())
+        print('Len:', len(dataset))
+        for ii, data in enumerate(dataset):
+            if ii==2: break
+            print(data['L'])
 
         for epoch in range(self.epochs):
 
@@ -124,6 +110,7 @@ class TripletNet(object):
             photo_net.train()
             sketch_net.train()
             avg_loss = 0
+            text = []
 
             for ii, data in enumerate(dataset):
                 photo_optimizer.zero_grad()
@@ -140,9 +127,11 @@ class TripletNet(object):
 
                 # label = t.unsqueeze(t.tensor(label), 0)
                 
-                a_feature = sketch_net(anchor)
-                p_feature= photo_net(pos)
-                n_feature= photo_net(neg)
+                _, a_feature = sketch_net(anchor)
+                _, p_feature= photo_net(pos)
+                _, n_feature= photo_net(neg)
+
+                # a_feature, p_feature,n_feature = photo_net(anchor, pos, neg)
 
                 loss = triplet_loss(a_feature, p_feature, n_feature)
                 # loss = loss / self.batch_size
@@ -158,14 +147,22 @@ class TripletNet(object):
                         # 'Loss  ({losss:.4f})\t'
                         # 'Sketch Loss ({acc:.4f})\t'
                         .format(epoch + 1, ii + 1, len(dataset), triplet_loss_meterr=loss.item()))
-                if ii==3:
-                    break
+                avg_loss += loss.item()
+                text.append('[Train] Epoch: [{0}][{1}/{2}]\t'
+                        'Triplet loss  ({triplet_loss_meterr:.3f})\t'
+                        .format(epoch + 1, ii + 1, len(dataset), triplet_loss_meterr=loss.item()))
+                if ii==3: break
             if self.save_model:
-                # t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
-                # t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
-                t.save(photo_net, self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
-                t.save(sketch_net, self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
-
+                t.save(photo_net.state_dict(), self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
+                t.save(sketch_net.state_dict(), self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
+                # t.save(photo_net, self.save_dir + '/photo' + '/photo_' + self.net + '_%s.pth' % epoch)
+                # t.save(sketch_net, self.save_dir + '/sketch' + '/sketch_' + self.net + '_%s.pth' % epoch)
+                with open('loss.txt', 'a') as file:
+                    # Viết nội dung vào file
+                    file.write("---------------{0}---------------\n".format(epoch))
+                    for x in text:
+                        file.write(x+".\n")
+                    file.write("Train loss: " + str(avg_loss/len(dataset)) + "\n")
 
 
 
