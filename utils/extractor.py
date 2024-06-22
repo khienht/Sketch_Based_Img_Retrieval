@@ -4,6 +4,8 @@ import torch as t
 import torchvision as tv
 from torch import nn
 import pickle
+from data.image_input import ImageDataset
+from data import ImageDataLoader
 import numpy as np
 from data.image_input import ImageDataset
 
@@ -71,7 +73,8 @@ class Extractor(object):
                         i_feature = out
 
                     feature.append(i_feature.cpu().squeeze().numpy())
-                    name.append(cname + '/' + fname)
+                    # name.append(cname + '/' + fname)
+                    name = os.path.join(cname, fname)
 
         data = {'name': name, 'feature': feature}
         if out_root:
@@ -79,7 +82,7 @@ class Extractor(object):
             pickle.dump(data, out)
 
             out.close()
-
+        
         return data
 
     # extract the inputs' feature via self.model
@@ -97,8 +100,8 @@ class Extractor(object):
         opt.batch_size = 128
 
         # dataloader = ImageDataLoader(opt)
-        dataloader = ImageDataset(data_root)
         # dataset = dataloader.load_data()
+        dataset = ImageDataset(data_root)
 
         for i, data in enumerate(dataloader):
             image = data['I']
@@ -107,32 +110,48 @@ class Extractor(object):
 
             out = self.model(image)
             # if cat_info:
-            #     i_feature = out[1]
-            # else:
             i_feature = out
-            # if i == 0:
-            # feature = i_feature.squeeze().numpy()
             # else:
-            # feature.append(i_feature)
+                # i_feature = out
             # if i == 0:
-                # feature = i_feature.squeeze().numpy()
+            #     feature = i_feature.squeeze().numpy()
 
             # else:
             feature.append(i_feature.squeeze().numpy())
 
             names.append(name)
-            print('Extract img: ', name)
-            # if i==3: break
 
-        data = {'name': names, 'feature': feature}
+        data = {'name': names, 'feature': feature}        
+
         if out_root:
             out = open(out_root, 'wb')
             pickle.dump(data, out)
 
             out.close()
-
+        # print('a pkl file was created')
         return data
-    
+
+    # reload model with model file
+    # the reloaded model contains fully connection layer
+    def reload_state_dict_with_fc(self, state_file):
+        temp_model = tv.models.resnet50(pretrained=False)
+        temp_model.fc = nn.Linear(512, 10)
+        temp_model.load_state_dict(t.load(state_file))
+
+        pretrained_dict = temp_model.state_dict()
+
+        model_dict = self.model.state_dict()
+
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
+        model_dict.update(pretrained_dict)
+        self.model.load_state_dict(model_dict)
+
+    # reload model with model file
+    # the reloaded model doesn't contain fully connection layer
+    def reload_state_dic(self, state_file):
+        self.model.load_state_dict(t.load(state_file))
+
     # reload model with model object directly
     def reload_model(self, model):
         self.model = model

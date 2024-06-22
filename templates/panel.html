@@ -17,10 +17,33 @@
         <h2 style="margin-left: 28px">Query sketch</h2>
         <div style="height:200px;">
             <img src="{{ url_for('static', filename= './sketch_tmp/upload.png',_t=val1) }}"
-                 width="200" height="200"
+                 width="240" height="240"
                  style="border:3px solid black;margin:5px 0px 10px 0px"
                  alt="error: load image"/>
         </div>
+        <div>
+            <form method="POST" action="/canvas" enctype="multipart/form-data" style ="padding: 70px 0; text-align: center; margin-right: 40px;">
+                <label for="model_select" style ="font-size: 21px; font-weight: bold;  ">Select Model:</label>
+                <div style="padding-top: 10px;">
+                    <select class="model-select" name="model_select" id="model_select">
+                        <option value="resnet50" {% if model_name == 'resnet50' %}selected{% endif %}>ResNet50</option>
+                        <option value="vgg16" {% if model_name == 'vgg16' %}selected{% endif %}>VGG16</option>
+                    </select>
+                    <input type="hidden" name="sketchUpload" value="{{ upload_src }}">
+                    <div>
+                        <input type="submit" id="submitBtn" value="Submit" style="width: 70px; 
+                        height: 30px; 
+                        border-radius: 7px;
+                        border: 1px solid #ccc;
+                        margin: 10px 0 0 0px;
+                        font-weight: bold;" />
+                        <!-- <input type="text" name="submitflag" id="submitflag" 
+                        value="0" style="display:none" aria-hidden="true"/> -->
+                    </div>
+                </div>
+            </form>
+        </div>
+        
     </div>
 
     <div class="main">

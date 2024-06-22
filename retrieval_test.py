@@ -3,54 +3,87 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from PIL import Image
 import os
-import faiss
 import torchvision.transforms as transforms
-from utils.compute_PR import compute_PR
 import tqdm
+import torch
 
-PHOTO_ROOT = 'dataset/photo_test'
-SKETCH_ROOT = 'dataset/sketch_test'
+PHOTO_ROOT = './dataset/photo_test'
+SKETCH_ROOT = './dataset/sketch_test'
 
-photo_data = pickle.load(open('feature/bt32_001_1/photo-vgg-19epoch.pkl', 'rb'))
-sketch_data = pickle.load(open('feature/bt32_001_1/sketch-vgg-19epoch.pkl', 'rb'))
-photo_feature = photo_data['feature']
+mAP_list =[]
+for i in range(20,21):
+    print('---------------',i,'---------------')
+    photoft_root = 'features_pkl/rn50_bs32_mg1_lr3_10class/'+str(i)+'/photo-resnet-epoch_'+str(i)+'.pkl'
+    # print(photoft_root)
+    photo_data = pickle.load(open(photoft_root, 'rb'))
+    sketch_data = pickle.load(open('features_pkl/rn50_bs32_mg1_lr3_10class/'+str(i)+'/sketch-resnet-epoch_'+str(i)+'.pkl', 'rb'))
 
-print(len(photo_feature))
-# print(photo_feature[0])
+    # print(photo_data['name'][0])
+    photo_feature = photo_data['feature']
+    photo_name = photo_data['name']
 
+    sketch_feature = sketch_data['feature']
+    sketch_name = sketch_data['name']
+    nbrs = NearestNeighbors(n_neighbors=np.size(photo_feature, 0),
+                            algorithm='brute', metric='euclidean').fit(photo_feature)
 
-i = 0
+    s_len = np.size(sketch_feature, 0)
+    picked = [0] * s_len
 
-photo_name = photo_data['name']
+    transform = transforms.Compose([
+        transforms.ToTensor()
+    ])
 
-sketch_feature = sketch_data['feature']
-sketch_name = sketch_data['name']
-print(sketch_feature[0].shape)
-print(len(sketch_feature))
-nbrs = NearestNeighbors(n_neighbors=30,algorithm='brute', 
-                        metric='euclidean').fit(photo_feature)
+    count = 0
+    count_5 = 0
+    K = 30
+    div = 0
+    total_queries = 0 
+    total_ap = 0.0
+    mAP = 0.0
+    for ii, (query_sketch, query_name) in tqdm.tqdm(enumerate(zip(sketch_feature, sketch_name))):
+        query_sketch = np.reshape(query_sketch, [1, np.shape(query_sketch)[0]])
+        query_class, query_img = os.path.split(query_name)
+        if (query_class == 'shoe') :
+            distances, indices = nbrs.kneighbors(query_sketch)
 
-count = 0
-count_5 = 0
-K = 5
+            div += distances[0][1] - distances[0][0]
 
-AP = 0
+            # top K
 
-for ii, (query_sketch, query_name) in tqdm.tqdm(enumerate(zip(sketch_feature, sketch_name))):
-    # print('shape', query_sketch.shape)
-    query_sketch = np.reshape(query_sketch, [1, np.shape(query_sketch)[0]])
-    query_split = query_name.split('/')
-    query_class = query_split[0]
-    query_img = query_split[1]
+            retrieved_correctly = False
+            count_relevant = 0
+            number_retrieve= 0
+            total_precision = 0.0
+            # print("query_class: " ,query_class)
+            for i, indice in enumerate(indices[0][:K]):
+                number_retrieve +=1
+                retrievaled_name = photo_name[indice]
+                retrievaled_class, retrievaled_filename = os.path.split(retrievaled_name)
 
-    distances, indices = nbrs.kneighbors(query_sketch)
-    # if query_class == 'starfish':
-    print('query:', query_name)
-    AP += compute_PR(query_name, indices[0])
-    count += 1
+                retrievaled_name = os.path.splitext(retrievaled_filename)[0]
 
-    # if ii ==14: break
-print(count)
-mAP = AP / count
-print('mAP :', mAP)
+                if retrievaled_class == query_class:
+                    if query_img.find(retrievaled_name) != -1:
+                        if i == 0:
+                            count +=1
+                            # retrieved_correctly = True
+                        count_5 += 1
+                        break
+                        # print (total_precision)
+                    count_relevant += 1
+                    total_precision += count_relevant/ number_retrieve
 
+            if count_relevant == 0:
+                total_ap += 0.0
+            else:
+                total_ap += total_precision/count_relevant   
+            # print(ap)
+            total_queries += 1
+        else:
+            continue
+
+    mAP = total_ap / total_queries
+    mAP_list.append(mAP)
+    # print(mAP)
+    print(f'mAP : {mAP:.16f}', f'Average precision: {total_ap:.10f}')
