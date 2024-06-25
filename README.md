@@ -27,6 +27,6 @@
 * **Giảng viên:** TS. Mai Tiến Dũng
 
 ## FINAL PROJECT
-Report: 
+[Documents](https://github.com/khienht/Sketch_Based_Img_Retrieval/tree/main/Documents)
 <!-- Footer -->
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;`Copyright © 2024 - Hồ Thị Khánh Hiền - Nguyễn Như Hà`
